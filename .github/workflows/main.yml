@@ -6,9 +6,6 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,35 +20,39 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Extract Android project
+        run: |
+          rm -rf project
+          mkdir project
+          unzip -q "streamix-bd (2).zip" -d project
+
       - name: Find Gradle Wrapper
         shell: bash
         run: |
-          GRADLEW=$(find . -type f -name "gradlew" -print -quit)
+          GRADLEW=$(find "$GITHUB_WORKSPACE/project" -type f -name "gradlew" -print -quit)
 
           if [ -z "$GRADLEW" ]; then
-            echo "ERROR: gradlew not found"
+            echo "ERROR: gradlew was not found inside the ZIP."
+            find "$GITHUB_WORKSPACE/project" -maxdepth 4 -type f | head -100
             exit 1
           fi
 
-          GRADLE_DIR=$(dirname "$GRADLEW")
+          PROJECT_DIR=$(dirname "$GRADLEW")
 
-          echo "Found: $GRADLEW"
-          echo "Directory: $GRADLE_DIR"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Gradle project: $PROJECT_DIR"
 
-          chmod +x "$GRADLEW"
-
-          echo "GRADLEW=$GRADLEW" >> "$GITHUB_ENV"
-          echo "GRADLE_DIR=$GRADLE_DIR" >> "$GITHUB_ENV"
+      - name: Make Gradle executable
+        run: chmod +x "$PROJECT_DIR/gradlew"
 
       - name: Build Debug APK
-        shell: bash
-        run: |
-          cd "$GRADLE_DIR"
-          ./gradlew assembleDebug --no-daemon
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Streamix-BD-Debug
-          path: "**/build/outputs/apk/debug/*.apk"
+          name: Streamix-Debug-APK
+          path: |
+            ${{ env.PROJECT_DIR }}/**/build/outputs/apk/debug/*.apk
           if-no-files-found: error
