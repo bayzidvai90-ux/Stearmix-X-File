@@ -22,10 +22,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
 
       - name: Find Gradle Wrapper
         shell: bash
@@ -33,19 +29,19 @@ jobs:
           GRADLEW=$(find . -type f -name "gradlew" -print -quit)
 
           if [ -z "$GRADLEW" ]; then
-            echo "ERROR: gradlew not found!"
+            echo "ERROR: gradlew not found"
             exit 1
           fi
 
           GRADLE_DIR=$(dirname "$GRADLEW")
 
-          echo "Gradle wrapper found: $GRADLEW"
-          echo "Gradle directory: $GRADLE_DIR"
+          echo "Found: $GRADLEW"
+          echo "Directory: $GRADLE_DIR"
+
+          chmod +x "$GRADLEW"
 
           echo "GRADLEW=$GRADLEW" >> "$GITHUB_ENV"
           echo "GRADLE_DIR=$GRADLE_DIR" >> "$GITHUB_ENV"
-
-          chmod +x "$GRADLEW"
 
       - name: Build Debug APK
         shell: bash
@@ -57,6 +53,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Streamix-BD-Debug
-          path: |
-            **/build/outputs/apk/debug/*.apk
+          path: "**/build/outputs/apk/debug/*.apk"
           if-no-files-found: error
